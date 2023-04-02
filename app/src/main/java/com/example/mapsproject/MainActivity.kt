@@ -3,39 +3,57 @@ package com.example.mapsproject
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
-import android.location.Location
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Looper
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.android.gms.location.*
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
+import com.yandex.mapkit.map.IconStyle
+import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.mapview.MapView
-
+import com.yandex.runtime.image.ImageProvider
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        const val FIRST_MARKER =
+            "https://abrakadabra.fun/uploads/posts/2022-01/1642606164_5-abrakadabra-fun-p-lokatsiya-ikonka-16.png"
+        const val SECOND_MARKER =
+            "https://abrakadabra.fun/uploads/posts/2022-01/1641345254_2-abrakadabra-fun-p-simvol-lokatsii-11.png"
+    }
 
-    private val mapview  by lazy{
+
+    private val mapView by lazy {
         findViewById<MapView>(R.id.mapView)
     }
 
+    private var isAccess = false
+
     private val locationRequest = createLocationRequest()
 
-    private val locationCallback: LocationCallback by lazy{
+    private val locationCallback: LocationCallback by lazy {
         object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
-                    Toast.makeText(this@MainActivity,(location.longitude.toString() + " " + location.latitude.toString()),Toast.LENGTH_SHORT).show()
-                    mapview.getMap().move(
-                        CameraPosition(Point(location.latitude, location.longitude), 11.0f, 0.0f, 0.0f),
-                        Animation(Animation.Type.SMOOTH, 0F),
-                        null
-                    )
+                    Toast.makeText(
+                        this@MainActivity,
+                        (location.longitude.toString() + " " + location.latitude.toString()),
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    val point = Point(location.latitude, location.longitude)
+                    putMarker(point, SECOND_MARKER)
+                    stopLocationUpdates()
                 }
             }
         }
@@ -53,26 +71,18 @@ class MainActivity : AppCompatActivity() {
                 ACCESS_FINE_LOCATION,
                 false
             ) -> {
-                startLocationUpdates()//getLastLocation()
+                isAccess = true
             }
             permissions.getOrDefault(
                 ACCESS_COARSE_LOCATION,
                 false
             ) -> {
-                startLocationUpdates()//getLastLocation()
+                isAccess = true
             }
             else -> {
 
             }
         }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun getLastLocation() {
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                println(location)
-            }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,18 +91,61 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         super.onCreate(savedInstanceState)
 
+        putMarker(Point(53.925157, 27.508873), FIRST_MARKER)
+
         locationPermissionRequest.launch(
             arrayOf(
                 ACCESS_FINE_LOCATION,
                 ACCESS_COARSE_LOCATION
             )
         )
+        findViewById<Button>(R.id.button).setOnClickListener {
+            if (isAccess) startLocationUpdates()
+        }
+    }
 
-        stopLocationUpdates()
+    private fun putMarker(point: Point, url: String) {
+        val markerSize =
+            this@MainActivity.resources.getDimensionPixelSize(R.dimen.map_marker_icon_size)
+        Glide.with(this@MainActivity).asBitmap()
+            .load(url)
+            .into(object : CustomTarget<Bitmap>(markerSize, markerSize) {
+                override fun onResourceReady(
+                    resource: Bitmap,
+                    transition: Transition<in Bitmap>?
+                ) {
+                    val markerClickCallback =
+                        MapObjectTapListener { _, _ ->
+                            if (url == FIRST_MARKER) {
+                                val bottomSheetFragment = OfficeInfoFragment()
+                                bottomSheetFragment.show(
+                                    supportFragmentManager,
+                                    bottomSheetFragment.tag
+                                )
+                            }
+                            true
+                        }
+
+                    mapView.map.mapObjects.addPlacemark(
+                        point,
+                        ImageProvider.fromBitmap(resource),
+                        IconStyle()
+                    ).addTapListener(markerClickCallback)
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {
+                }
+            })
+
+        mapView.getMap().move(
+            CameraPosition(point, 11.0f, 0.0f, 0.0f),
+            Animation(Animation.Type.SMOOTH, 0F),
+            null
+        )
     }
 
     private fun createLocationRequest(): LocationRequest {
-        val timeInterval = 10000L
+        val timeInterval = 0L
         return LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY, timeInterval
         ).build()
@@ -112,7 +165,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        mapview.onStop()
+        mapView.onStop()
         MapKitFactory.getInstance().onStop()
         super.onStop()
     }
@@ -120,6 +173,6 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         MapKitFactory.getInstance().onStart()
-        mapview.onStart()
+        mapView.onStart()
     }
 }

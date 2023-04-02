@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MapsProject</string>
+    <string name="your_location">Your Location</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="teachmeskills_office">TeachMeSkills Office</string>
+    <string name="address">Address: Temiryazeva 67, Minsk</string>
+    <string name="phone">Phone: +375 (29) 300 50 16</string>
 </resources>
