@@ -118,10 +118,11 @@ class MainActivity : AppCompatActivity() {
                         MapObjectTapListener { _, _ ->
                             if (url == FIRST_MARKER) {
                                 val bottomSheetFragment = OfficeInfoFragment()
-                                bottomSheetFragment.show(
-                                    supportFragmentManager,
-                                    bottomSheetFragment.tag
-                                )
+                                supportFragmentManager
+                                    .beginTransaction()
+                                    .add(bottomSheetFragment, "")
+                                    .addToBackStack("")
+                                    .commit()
                             }
                             true
                         }
