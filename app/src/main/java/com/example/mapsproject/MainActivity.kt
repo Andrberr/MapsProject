@@ -26,9 +26,9 @@ import com.yandex.runtime.image.ImageProvider
 
 class MainActivity : AppCompatActivity() {
     companion object {
-        const val FIRST_MARKER =
+        private const val FIRST_MARKER =
             "https://abrakadabra.fun/uploads/posts/2022-01/1642606164_5-abrakadabra-fun-p-lokatsiya-ikonka-16.png"
-        const val SECOND_MARKER =
+        private const val SECOND_MARKER =
             "https://abrakadabra.fun/uploads/posts/2022-01/1641345254_2-abrakadabra-fun-p-simvol-lokatsii-11.png"
     }
 
@@ -59,6 +59,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val markerClickCallbacks = mutableListOf<MapObjectTapListener>()
+
     private val fusedLocationClient: FusedLocationProviderClient by lazy {
         LocationServices.getFusedLocationProviderClient(this)
     }
@@ -72,12 +74,14 @@ class MainActivity : AppCompatActivity() {
                 false
             ) -> {
                 isAccess = true
+                println("fine")
             }
             permissions.getOrDefault(
                 ACCESS_COARSE_LOCATION,
                 false
             ) -> {
                 isAccess = true
+                println("coarse")
             }
             else -> {
 
@@ -117,15 +121,12 @@ class MainActivity : AppCompatActivity() {
                     val markerClickCallback =
                         MapObjectTapListener { _, _ ->
                             if (url == FIRST_MARKER) {
-                                val bottomSheetFragment = OfficeInfoFragment()
-                                supportFragmentManager
-                                    .beginTransaction()
-                                    .add(bottomSheetFragment, "")
-                                    .addToBackStack("")
-                                    .commit()
+                                val bottomSheetFragment = OfficeInfoDialogFragment()
+                                bottomSheetFragment.show(supportFragmentManager, bottomSheetFragment.tag)
                             }
                             true
                         }
+                    markerClickCallbacks.add(markerClickCallback)
 
                     mapView.map.mapObjects.addPlacemark(
                         point,
@@ -146,7 +147,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createLocationRequest(): LocationRequest {
-        val timeInterval = 0L
+        val timeInterval = 1000L
         return LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY, timeInterval
         ).build()
@@ -168,6 +169,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         mapView.onStop()
         MapKitFactory.getInstance().onStop()
+        markerClickCallbacks.clear()
         super.onStop()
     }
 
